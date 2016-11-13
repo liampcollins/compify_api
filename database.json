@@ -1,0 +1,14 @@
+{
+  "dev": {
+    "driver": "pg",
+    "user": "postgres",
+    "host": "localhost",
+    "database": "compify"
+  },
+  "prod": {
+    "driver": "pg",
+    "user": "root",
+    "password": "root"
+  }
+
+}
