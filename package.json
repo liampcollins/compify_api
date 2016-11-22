@@ -17,6 +17,7 @@
     "jade": "~1.11.0",
     "morgan": "~1.7.0",
     "pg-promise": "^3.2.3",
+    "ramda": "^0.22.1",
     "serve-favicon": "~2.3.0"
   }
 }

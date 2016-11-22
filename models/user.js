@@ -1,6 +1,7 @@
-'user strict'
-const db = require('./database').db;
+'user strict';
 
+const R = require('ramda');
+const db = require('./database').db;
 function getAllUsers(req, res, next) {
   db.any('select * from users')
     .then(function (data) {
@@ -18,26 +19,23 @@ function getAllUsers(req, res, next) {
 }
 
 function getSingleUser(req, res, next) {
-  var userID = parseInt(req.params.id);
-  db.one('select * from users where id = $1', userID)
+  var email = req.body.email;
+  console.log('BODY - ', req.body)
+  return db.one('select * from users where email = $1', email)
     .then(function (data) {
-      res.status(200)
-        .json({
-          status: 'success',
-          data: data,
-          message: 'Retrieved ONE user'
-        });
+      return data;
     })
     .catch(function (err) {
+      if (err.message == 'No data returned from the query.') {
+        return null;
+      }
       return next(err);
     });
 }
 
 function createUser(req, res, next) {
-  req.body.username = parseInt(req.body.username);
-  req.body.spotify_token = parseInt(req.body.spotify_token);
-  req.body.email = parseInt(req.body.email);
-  db.none('insert into competitions(username, spotify_token, email)' +
+  console.log('req.body', req.body)
+  db.none('insert into users(username, spotify_token, email)' +
       'values(${username}, ${spotify_token}, ${email})',
     req.body)
     .then(function () {
@@ -48,8 +46,26 @@ function createUser(req, res, next) {
         });
     })
     .catch(function (err) {
+      console.log('ERROR - ', JSON.stringify(err))
       return next(err);
     });
+}
+
+
+function upsertUser(req, res, next) {
+  return getSingleUser(req, res, next).then((user) => {
+    if (user) {
+      res.status(200)
+        .json({
+          status: 'success',
+          data: data,
+          message: 'Retrieved user from DB'
+        });
+    } else {
+      return createUser(req, res, next);
+    }
+    console.log('user', user)
+  })
 }
 
 function updateUser(req, res, next) {
@@ -103,10 +119,12 @@ function getUserCompetitions(req, res, next) {
 }
 
 module.exports = {
+  upsertUser: upsertUser,
   getUserCompetitions: getUserCompetitions,
   getAllUsers: getAllUsers,
   getSingleUser: getSingleUser,
   createUser: createUser,
   updateUser: updateUser,
   removeUser: removeUser
+
 };

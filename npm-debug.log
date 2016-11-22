@@ -1,5 +1,5 @@
 0 info it worked if it ends with ok
-1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'start' ]
+1 verbose cli [ '/usr/local/bin/node', '/usr/local/bin/npm', 'run', 'start' ]
 2 info using npm@3.10.8
 3 info using node@v6.8.1
 4 verbose run-script [ 'prestart', 'start', 'poststart' ]
@@ -7,8 +7,8 @@
 6 silly lifecycle node-postgres-promises@0.0.0~prestart: no script for prestart, continuing
 7 info lifecycle node-postgres-promises@0.0.0~start: node-postgres-promises@0.0.0
 8 verbose lifecycle node-postgres-promises@0.0.0~start: unsafe-perm in lifecycle true
-9 verbose lifecycle node-postgres-promises@0.0.0~start: PATH: /usr/local/lib/node_modules/npm/bin/node-gyp-bin:/Users/liam.collins/Documents/other/express_postges/node-postgres-promises/node_modules/.bin:/Library/PostgreSQL/9.4/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-10 verbose lifecycle node-postgres-promises@0.0.0~start: CWD: /Users/liam.collins/Documents/other/express_postges/node-postgres-promises
+9 verbose lifecycle node-postgres-promises@0.0.0~start: PATH: /usr/local/lib/node_modules/npm/bin/node-gyp-bin:/Users/liam.collins/Documents/other/compify-api/node_modules/.bin:/Library/PostgreSQL/9.4/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+10 verbose lifecycle node-postgres-promises@0.0.0~start: CWD: /Users/liam.collins/Documents/other/compify-api
 11 silly lifecycle node-postgres-promises@0.0.0~start: Args: [ '-c', 'node ./bin/www' ]
 12 silly lifecycle node-postgres-promises@0.0.0~start: Returned: code: 1  signal: null
 13 info lifecycle node-postgres-promises@0.0.0~start: Failed to exec start script
@@ -23,9 +23,9 @@
 14 verbose stack     at maybeClose (internal/child_process.js:877:16)
 14 verbose stack     at Process.ChildProcess._handle.onexit (internal/child_process.js:226:5)
 15 verbose pkgid node-postgres-promises@0.0.0
-16 verbose cwd /Users/liam.collins/Documents/other/express_postges/node-postgres-promises
+16 verbose cwd /Users/liam.collins/Documents/other/compify-api
 17 error Darwin 14.5.0
-18 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "start"
+18 error argv "/usr/local/bin/node" "/usr/local/bin/npm" "run" "start"
 19 error node v6.8.1
 20 error npm  v3.10.8
 21 error code ELIFECYCLE
