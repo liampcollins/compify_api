@@ -19,8 +19,7 @@ function getAllUsers(req, res, next) {
 }
 
 function getSingleUser(req, res, next) {
-  var email = req.body.email;
-  console.log('BODY - ', req.body)
+  const email = req.body.email;
   return db.one('select * from users where email = $1', email)
     .then(function (data) {
       return data;
@@ -34,13 +33,13 @@ function getSingleUser(req, res, next) {
 }
 
 function createUser(req, res, next) {
-  console.log('req.body', req.body)
-  db.none('insert into users(username, spotify_token, email)' +
-      'values(${username}, ${spotify_token}, ${email})',
+  return db.none('insert into users(username, spotify_token, email)' +
+      'values(${id}, ${spotify_token}, ${email})',
     req.body)
     .then(function () {
       res.status(200)
         .json({
+          data: req.body,
           status: 'success',
           message: 'Inserted one user'
         });
@@ -53,18 +52,13 @@ function createUser(req, res, next) {
 
 
 function upsertUser(req, res, next) {
+  req.body.spotify_token = "dsfdsfsds"
   return getSingleUser(req, res, next).then((user) => {
     if (user) {
-      res.status(200)
-        .json({
-          status: 'success',
-          data: data,
-          message: 'Retrieved user from DB'
-        });
+      return getUserCompetitions(user, res, next);
     } else {
       return createUser(req, res, next);
     }
-    console.log('user', user)
   })
 }
 
@@ -101,21 +95,30 @@ function removeUser(req, res, next) {
 }
 
 
-function getUserCompetitions(req, res, next) {
-  const userId = parseInt(req.params.userId)
-  db.any('select * from competitions where user_id = $1', userId)
-    .then(function (data) {
-      res.status(200)
-        .json({
-          status: 'success',
-          data: data,
-          message: 'Retrieved ALL users competitions'
-        });
-    })
-    .catch(function (err) {
-      console.log('ERR:', err)
-      return next(err);
-    });
+function getUserCompetitions(user, res, next) {
+  const userId = parseInt(user.id);
+  db.task(t => {
+    return t.map('SELECT * FROM competitions WHERE user_id = $1', userId, comp => {
+      return t.any('SELECT * FROM playlists WHERE competition_id = $1', comp.id).then(playlists => {
+        comp.playlists = playlists;
+        return comp;
+      });
+    }).then(t.batch) /* this is short for: data => t.batch(data) */
+  })
+  .then(competitions => {
+    user.compeitions = competitions;
+    res.status(200)
+      .json({
+        status: 'success',
+        data: user,
+        message: 'Retrieved ALL users competitions'
+      });
+      return res
+  })
+  .catch(function (err) {
+    console.log('ERR:', err)
+    return next(err);
+  });
 }
 
 module.exports = {

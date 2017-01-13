@@ -2,7 +2,6 @@
 const db = require('./database').db;
 
 function getAllCompetitions(req, res, next) {
-  console.log('here', db)
   db.any('select * from competitions')
     .then(function (data) {
       res.status(200)
