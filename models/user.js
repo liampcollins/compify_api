@@ -19,10 +19,14 @@ function getAllUsers(req, res, next) {
 }
 
 function getSingleUser(req, res, next) {
-  const email = req.body.email;
+  const user = req.body;
+  const email = user.email;
+  if (!email) {
+    return Promise.resolve(null);
+  }
   return db.one('select * from users where email = $1', email)
     .then(function (data) {
-      return data;
+      return Object.assign(user, data);
     })
     .catch(function (err) {
       if (err.message == 'No data returned from the query.') {
@@ -55,11 +59,24 @@ function upsertUser(req, res, next) {
   req.body.spotify_token = "dsfdsfsds"
   return getSingleUser(req, res, next).then((user) => {
     if (user) {
-      return getUserCompetitions(user, res, next);
+      return getUserCompetitions(user, res, next).then((competitions) => {
+        user.competitions = competitions;
+        console.log('user', user);
+        res.status(200)
+          .json({
+            status: 'success',
+            data: user,
+            message: 'Retrieved ALL users competitions'
+          });
+      });
     } else {
       return createUser(req, res, next);
     }
   })
+  .catch(function (err) {
+    console.log('ERR Getting USER:', err)
+    return next(err);
+  });
 }
 
 function updateUser(req, res, next) {
@@ -97,7 +114,7 @@ function removeUser(req, res, next) {
 
 function getUserCompetitions(user, res, next) {
   const userId = parseInt(user.id);
-  db.task(t => {
+  return db.task(t => {
     return t.map('SELECT * FROM competitions WHERE user_id = $1', userId, comp => {
       return t.any('SELECT * FROM playlists WHERE competition_id = $1', comp.id).then(playlists => {
         comp.playlists = playlists;
@@ -105,20 +122,6 @@ function getUserCompetitions(user, res, next) {
       });
     }).then(t.batch) /* this is short for: data => t.batch(data) */
   })
-  .then(competitions => {
-    user.compeitions = competitions;
-    res.status(200)
-      .json({
-        status: 'success',
-        data: user,
-        message: 'Retrieved ALL users competitions'
-      });
-      return res
-  })
-  .catch(function (err) {
-    console.log('ERR:', err)
-    return next(err);
-  });
 }
 
 module.exports = {
