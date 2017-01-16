@@ -3,13 +3,17 @@ const express = require('express');
 const router = express.Router();
 const competition = require('../models/competition');
 const competitionPlaylist = require('../models/competitionPlaylist');
+const userCompetition = require('../models/userCompetition');
+
 const user = require('../models/user');
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-// router.get('/api/user/:userId/competitions', user.getUserCompetitions);
+router.post('/api/user/:userId/competitions', userCompetition.createUserCompetition);
+router.get('/api/user/:userId/competitions', userCompetition.getUserCompetitions);
+
 // router.get('/api/competition/:compId/playlists', competitionPlaylist.getCompetitionPlaylists);
 // router.delete('/api/competition/:compId/playlists/:playlistId', competitionPlaylist.removeCompetitionPlaylist);
 // // router.get('/api/playlists/:id', playlist.getSingleCompetitionPlaylist);

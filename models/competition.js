@@ -34,11 +34,10 @@ function getSingleCompetition(req, res, next) {
 }
 
 function createCompetition(req, res, next) {
-  req.body.age = parseInt(req.body.age);
-  db.none('insert into competitions(name, image)' +
-      'values(${name}, ${image})',
+  db.none('insert into competitions(${this~})' +
+      'values(${name}, ${theme}, ${song_count}, ${submission_end_date}, ${vote_end_date}, ${user_id}, ${image})',
     req.body)
-    .then(function () {
+    .then(function (resp) {
       res.status(200)
         .json({
           status: 'success',
@@ -46,12 +45,12 @@ function createCompetition(req, res, next) {
         });
     })
     .catch(function (err) {
+      console.log('ERR: ', err)
       return next(err);
     });
 }
 
 function updateCompetition(req, res, next) {
-  console.log('params', req.params, 'body', req.body)
   db.none('update competitions set name=$1, image=$2 where id=$3',
     [req.body.name, req.body.image, parseInt(req.params.id)])
     .then(function () {

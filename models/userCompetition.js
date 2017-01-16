@@ -38,27 +38,24 @@ function getSingleUserCompetition(req, res, next) {
 }
 
 function createUserCompetition(req, res, next) {
-  req.body.age = parseInt(req.body.age);
-  const params = req.body;
-  params.userId = parseInt(req.params.userId);
-
-  db.none('insert into competitions(name, image)' +
-      'values(${name}, ${image}) where user_id = ${userId}',
+  db.one('insert into competitions(user_id, name, theme, song_count, submission_end_date, vote_end_date, image)' +
+      'values(${user_id}, ${name}, ${theme}, ${song_count}, ${submission_end_date}, ${vote_end_date}, ${image}) returning id',
     req.body)
-    .then(function () {
+    .then(function (data) {
       res.status(200)
         .json({
+          data: data,
           status: 'success',
           message: 'Inserted one comp'
         });
     })
     .catch(function (err) {
+      console.log('ERR: ', err)
       return next(err);
     });
 }
 
 function updateUserCompetition(req, res, next) {
-  console.log('params', req.params, 'body', req.body)
   db.none('update competitions set name=$1, image=$2 where id=$3',
     [req.body.name, req.body.image, parseInt(req.params.id)])
     .then(function () {
@@ -92,9 +89,6 @@ function removeUserCompetition(req, res, next) {
 
 
 module.exports = {
-  getAllUserCompetitions: getAllUserCompetitions,
-  getSingleUserCompetition: getSingleUserCompetition,
-  createUserCompetition: createUserCompetition,
-  updateUserCompetition: updateUserCompetition,
-  removeUserCompetition: removeUserCompetition
+  createUserCompetition,
+  getUserCompetitions
 };
