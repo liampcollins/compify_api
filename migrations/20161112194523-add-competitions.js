@@ -46,7 +46,7 @@ exports.up = function(db) {
     },
     image: {
       type: 'text',
-      notNull: true
+      notNull: false
     },
     theme: {
       type: 'string',

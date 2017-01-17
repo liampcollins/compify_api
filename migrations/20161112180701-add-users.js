@@ -27,7 +27,7 @@ exports.up = (db, callback) => {
     spotify_token: {
       type: 'string',
       unique: true,
-      notNull: true
+      notNull: false
     },
     username: {
       type: 'string',
