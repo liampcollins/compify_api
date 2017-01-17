@@ -37,8 +37,8 @@ function getSingleUser(req, res, next) {
 }
 
 function createUser(req, res, next) {
-  return db.none('insert into users(username, spotify_token, email)' +
-      'values(${id}, ${spotify_token}, ${email})',
+  return db.none('insert into users(username, email)' +
+      'values(${id}, ${email})',
     req.body)
     .then(function () {
       res.status(200)
@@ -56,8 +56,7 @@ function createUser(req, res, next) {
 
 
 function upsertUser(req, res, next) {
-  req.body.spotify_token = "dsfdsfsds"
-  return getSingleUser(req, res, next).then((user) => {
+    return getSingleUser(req, res, next).then((user) => {
     if (user) {
       return getUserCompetitions(user, res, next).then((competitions) => {
         user.competitions = competitions;

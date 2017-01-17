@@ -4,7 +4,7 @@ const db = require('./database').db;
 
 function getUserCompetitions(req, res, next) {
   const userId = parseInt(req.params.userId)
-  db.any('select * from competitions where user_id = $1', userId)
+  db.any('SELECT c.* FROM competitions c join competitions_users cu on c.id = cu.competition_id join users u on u.id = cu.user_id where u.id = $1', userId)
     .then(function (data) {
       res.status(200)
         .json({
@@ -37,14 +37,31 @@ function getSingleUserCompetition(req, res, next) {
     });
 }
 
-function createUserCompetition(req, res, next) {
-  db.one('insert into competitions(user_id, name, theme, song_count, submission_end_date, vote_end_date, image)' +
+function createCompetition(req, res, next) {
+  return db.one('insert into competitions(user_id, name, theme, song_count, submission_end_date, vote_end_date, image)' +
       'values(${user_id}, ${name}, ${theme}, ${song_count}, ${submission_end_date}, ${vote_end_date}, ${image}) returning id',
-    req.body)
-    .then(function (data) {
+    req.body);
+}
+
+function addUserToCompetition(userId, compId) {
+  const data = {userId, compId};
+  return db.none('insert into competitions_users(user_id, competition_id)' +
+      'values(${userId}, ${compId})',
+    data);
+}
+
+
+function createUserCompetition(req, res, next) {
+  let compId;
+  return createCompetition(req, res, next)
+    .then((data) => {
+      compId = data.id;
+      return addUserToCompetition(req.body.user_id, compId);
+    })
+    .then(() => {
       res.status(200)
         .json({
-          data: data,
+          data: compId,
           status: 'success',
           message: 'Inserted one comp'
         });
