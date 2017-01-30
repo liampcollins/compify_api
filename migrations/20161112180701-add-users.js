@@ -24,8 +24,18 @@ exports.up = (db, callback) => {
       primaryKey: true,
       autoIncrement: true
     },
-    spotify_token: {
-      type: 'string',
+    access_token: {
+      type: 'text',
+      unique: true,
+      notNull: false
+    },
+    refresh_token: {
+      type: 'text',
+      unique: true,
+      notNull: false
+    },
+    session_token: {
+      type: 'text',
       unique: true,
       notNull: false
     },
@@ -37,19 +47,13 @@ exports.up = (db, callback) => {
       type: 'string',
       unique: true,
       notNull: true
+    },
+    image: {
+      type: 'text',
+      unique: false,
+      notNull: false
     }
-  })
-
-  // return db.createTable( 'user', {
-  //   id: {
-  //     type: 'int',
-  //     unsigned: true,
-  //     notNull: true,
-  //     primaryKey: true,
-  //     autoIncrement: true,
-  //     length: 10
-  //   }
-  // })
+  });
 };
 
 exports.down = function(db) {
@@ -59,40 +63,3 @@ exports.down = function(db) {
 exports._meta = {
   "version": 1
 };
-
-
-
-// db.createTable('users', {
-//   id: {
-//     type: 'int',
-//     unsigned: true,
-//     notNull: true,
-//     primaryKey: true,
-//     autoIncrement: true,
-//     length: 10
-//   }
-  // ,
-  // spotify_token:
-  // {
-  //   type: 'string',
-  //   unique: true,
-  //   notNull: true
-  // },
-  // username:
-  // {
-  //   type: 'string',
-  //   notNull: true
-  // },
-  // email:
-  // {
-  //   type: 'string',
-  //   unique: true,
-  //   notNull: true
-  // }
-// }, callback)
-// };
-//
-//
-// exports.down = function(db, callback) {
-// db.dropTable('users', callback);
-// };

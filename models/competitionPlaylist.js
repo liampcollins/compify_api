@@ -1,6 +1,22 @@
 'user strict'
 const db = require('./database').db;
 
+function createCompetitionPlaylists(req, res, next) {
+  console.log('createCompetitionPlaylists')
+  return db.one('insert into playlists(user_id, spotify_id, competition_id)' +
+      'values(${user_id}, ${spotify_id}, ${competition_id})', req.body)
+    .then(function () {
+      res.status(200)
+      .json({
+        status: 'success',
+        message: 'Playlist added to competition'
+      });
+    })
+    .catch(function (err) {
+      console.log('ERR:', err)
+      return next(err);
+    });
+}
 
 function getCompetitionPlaylists(req, res, next) {
   const compId = parseInt(req.params.compId)
@@ -42,9 +58,10 @@ function removeCompetitionPlaylist(req, res, next) {
 
 
 module.exports = {
-  getCompetitionPlaylists: getCompetitionPlaylists,
+  createCompetitionPlaylists,
+  getCompetitionPlaylists,
 //   getSingleCompetitionPlaylist: getSingleCompetitionPlaylist,
 //   createCompetitionPlaylist: createCompetitionPlaylist,
 //   updateCompetitionPlayList: updateCompetitionPlayList,
-  removeCompetitionPlaylist: removeCompetitionPlaylist
+  removeCompetitionPlaylist
 };
