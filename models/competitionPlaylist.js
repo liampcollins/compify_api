@@ -2,7 +2,6 @@
 const db = require('./database').db;
 
 function createCompetitionPlaylists(req, res, next) {
-  console.log('createCompetitionPlaylists')
   return db.one('insert into playlists(user_id, spotify_id, competition_id)' +
       'values(${user_id}, ${spotify_id}, ${competition_id})', req.body)
     .then(function () {
@@ -36,8 +35,6 @@ function getCompetitionPlaylists(req, res, next) {
 }
 
 function removeCompetitionPlaylist(req, res, next) {
-  console.log('REQ: ', req)
-
   const compID = parseInt(req.params.compId);
   const playlistId = parseInt(req.params.playlistId)
 

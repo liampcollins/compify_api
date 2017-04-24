@@ -1,4 +1,4 @@
-'user strict';
+'use strict';
 
 const R = require('ramda');
 const db = require('./database').db;
@@ -21,12 +21,12 @@ function getTokens(req, res, next) {
 }
 
 function getSingleUser(req, res, next) {
-  const username = req.params.id;
+  const id = parseInt(req.params.id);
   let user;
-  if (!username) {
+  if (!id) {
     return Promise.resolve(null);
   }
-  return db.one('select * from users where username = $1', username)
+  return db.one('select * from users where id = $1', id)
     .then(function (data) {
       user = data;
       return getUserCompetitions(user, res, next).then((competitions) => {
@@ -48,7 +48,7 @@ function getSingleUser(req, res, next) {
 }
 
 
-function addUserToSpotifyData(req, res, next) {
+function addUserIdToSpotifyData(req, res, next) {
   const user = req.body;
   const email = user.email;
   if (!email) {
@@ -56,7 +56,7 @@ function addUserToSpotifyData(req, res, next) {
   }
   return db.one('select * from users where email = $1', email)
     .then(function (data) {
-      return Object.assign(user, data);
+      return Object.assign(user, { id: data.id });
     })
     .catch(function (err) {
       if (err.message == 'No data returned from the query.') {
@@ -85,10 +85,52 @@ function createUser(req, res, next) {
   });
 }
 
+function addFriendRequest(req, res, user, next) {
+  var data = {
+    user_id: user.id,
+    friend_id: req.params.id,
+    request_state: 0
+  }
+
+  return db.none('insert into user_friends(user_id, friend_id, request_state)' +
+      'values(${user_id}, ${friend_id}, ${request_state})',
+    data).then(() => {
+    res.status(200)
+      .json({
+        status: 'success',
+        data: user,
+        message: 'Friend request sent'
+      });
+  })
+  .catch((error) => {
+    console.log('Could not add friend request', error)
+    return next(error);
+  });
+}
+
+function addFriend(req, res, next) {
+  if (!req.body.info || !req.params.id) {
+    return Promise.resolve(null);
+  }
+  return db.one('select * from users where username = $1 OR email = $1', req.body.info).then(function (data) {
+    return addFriendRequest(req, res, data, next);
+  })
+  .catch(function (err) {
+    if (err.message === "No data returned from the query.") {
+      res.status(200)
+        .json({
+          status: 'success',
+          message: 'No user found matching your submission'
+        });
+      return;
+    }
+    return next(err);
+  });
+}
+
 function updateUserTokens(user, next) {
-  return db.none('insert into users(access_token, refresh_token, session_token)' +
-      'values(${access_token}, ${refresh_token}, ${session_token})',
-    user)
+  const tokenInfo = [user.access_token, user.refresh_token, user.session_token, parseInt(user.id)];
+  return db.none('update users set access_token=$1, refresh_token=$2, session_token=$3 where id=$4', tokenInfo)
   .then(function () {
     return user;
   })
@@ -99,7 +141,7 @@ function updateUserTokens(user, next) {
 }
 
 function upsertUser(req, res, next) {
-  return addUserToSpotifyData(req, res, next).then((user) => {
+  return addUserIdToSpotifyData(req, res, next).then((user) => {
     if (user) {
       return updateUserTokens(user, next).then(() => {
         return getUserCompetitions(user, res, next).then((competitions) => {
@@ -151,10 +193,59 @@ function getUserCompetitions(user, res, next) {
   })
 }
 
+
+function getUserFriends(req, res, next) {
+  const userId = req.params.id;
+  if (!userId) {
+    return Promise.resolve([]);
+  }
+
+  return db.any('select * from user_friends where user_id = $1 or friend_id = $1', userId)
+    .then(function (resp) {
+      if (!resp.length){
+        return res.status(200)
+          .json({
+            status: 'success',
+            data: resp,
+            message: 'User has no friends'
+          });
+      }
+      const friends = R.map(a => a.friend_id === parseInt(userId) ? a.user_id : a.friend_id,  resp);
+      return db.any('select * from users where id in ($1)', friends).then((users) => {
+        res.status(200)
+          .json({
+            status: 'success',
+            data: users,
+            message: 'Retrieved user friends'
+          });
+      });
+    })
+    .catch(function (err) {
+      console.log('Get User Friends Error: ', err)
+      return next(err);
+    });
+}
+
+function authenticateRequest(req, res, next) {
+  const userId = parseInt(req.params[0]);
+  const key = req.cookies.compify_api_key;
+  return db.one('select * from users where (id = $1 and session_token = $2)', [userId, key])
+    .then(function (data) {
+      next();
+    })
+    .catch(function (err) {
+      console.log('Authentication err', err);
+      return next(err);
+    });
+}
+
 module.exports = {
   upsertUser: upsertUser,
   getUserCompetitions: getUserCompetitions,
   getSingleUser: getSingleUser,
   createUser: createUser,
-  removeUser: removeUser
+  removeUser: removeUser,
+  getUserFriends,
+  addFriend,
+  authenticateRequest
 };

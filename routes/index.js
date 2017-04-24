@@ -4,18 +4,25 @@ const router = express.Router();
 const competition = require('../models/competition');
 const competitionPlaylist = require('../models/competitionPlaylist');
 const userCompetition = require('../models/userCompetition');
-
 const user = require('../models/user');
+
 router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
+
+router.get('/api/users/*', function(req, res, next) {
+  user.authenticateRequest(req, res, next);
+});
+
 
 /* TODO: split into separate route files */
 router.post('/api/user/:userId/competitions', userCompetition.createUserCompetition);
 router.get('/api/user/:userId/competitions', userCompetition.getUserCompetitions);
 router.post('/api/competition/:compId/playlists', competitionPlaylist.createCompetitionPlaylists);
 router.get('/api/users/:id', user.getSingleUser);
-router.post('/api/users', user.upsertUser);
+router.get('/api/users/:id/friends', user.getUserFriends);
+router.post('/api/user', user.upsertUser);
+router.post('/api/users/:id/friend/new', user.addFriend);
 
 
 // router.delete('/api/competition/:compId/playlists/:playlistId', competitionPlaylist.removeCompetitionPlaylist);

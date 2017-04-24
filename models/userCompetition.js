@@ -1,7 +1,6 @@
 'user strict'
 const db = require('./database').db;
 
-
 function getUserCompetitions(req, res, next) {
   const userId = parseInt(req.params.userId)
   db.any('SELECT c.* FROM competitions c join competitions_users cu on c.id = cu.competition_id join users u on u.id = cu.user_id where u.id = $1', userId)
@@ -38,8 +37,8 @@ function getSingleUserCompetition(req, res, next) {
 }
 
 function createCompetition(req, res, next) {
-  return db.one('insert into competitions(user_id, name, theme, song_count, submission_end_date, vote_end_date, image)' +
-      'values(${user_id}, ${name}, ${theme}, ${song_count}, ${submission_end_date}, ${vote_end_date}, ${image}) returning id',
+  return db.one('insert into competitions(user_id, name, theme, song_count, submission_end_date, vote_end_date)' +
+      'values(${user_id}, ${name}, ${theme}, ${song_count}, ${submission_end_date}, ${vote_end_date}) returning id',
     req.body);
 }
 
@@ -73,8 +72,8 @@ function createUserCompetition(req, res, next) {
 }
 
 function updateUserCompetition(req, res, next) {
-  db.none('update competitions set name=$1, image=$2 where id=$3',
-    [req.body.name, req.body.image, parseInt(req.params.id)])
+  db.none('update competitions set name=$1 where id=$3',
+    [req.body.name, parseInt(req.params.id)])
     .then(function () {
       res.status(200)
         .json({
