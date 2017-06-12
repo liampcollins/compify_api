@@ -1,7 +1,7 @@
 'user strict'
 const db = require('./database').db;
 
-function createCompetitionPlaylists(req, res, next) {
+function addPlaylistToCompetition(req, res, next) {
   return db.one('insert into playlists(user_id, spotify_id, competition_id)' +
       'values(${user_id}, ${spotify_id}, ${competition_id})', req.body)
     .then(function () {
@@ -55,7 +55,7 @@ function removeCompetitionPlaylist(req, res, next) {
 
 
 module.exports = {
-  createCompetitionPlaylists,
+  addPlaylistToCompetition,
   getCompetitionPlaylists,
 //   getSingleCompetitionPlaylist: getSingleCompetitionPlaylist,
 //   createCompetitionPlaylist: createCompetitionPlaylist,
