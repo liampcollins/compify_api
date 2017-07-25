@@ -1,4 +1,4 @@
-'user strict'
+'use strict'
 const db = require('./database').db;
 
 function getAllCompetitions(req, res, next) {

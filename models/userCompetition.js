@@ -1,39 +1,38 @@
 'user strict'
 const db = require('./database').db;
+const moment = require('moment');
+const R = require('ramda');
+const updateWinners = require('../utils/updateWinners');
 
-function getUserCompetitions(req, res, next) {
-  const userId = parseInt(req.params.userId)
-  db.any('SELECT c.* FROM competitions c join competitions_users cu on c.id = cu.competition_id join users u on u.id = cu.user_id where u.id = $1', userId)
-    .then(function (data) {
-      res.status(200)
-        .json({
-          status: 'success',
-          data: data,
-          message: 'Retrieved ALL users competitions'
-        });
-    })
-    .catch(function (err) {
-      console.log('ERR:', err)
-      return next(err);
-    });
+function checkForNewWinner(comps) {
+  const compsNeedingUdate = [];
+  comps.forEach(c => {
+    if (c.vote_end_date < moment() && !c.winner && c.playlists && c.playlists.length) {
+      compsNeedingUdate.push(c);
+    }
+  });
+  return compsNeedingUdate;
 }
 
-function getSingleUserCompetition(req, res, next) {
-  const userId = parseInt(req.params.userId);
-  const compId = parseInt(req.params.id);
-  if (!userID || !compId) return next();
-  db.one('select * from competitions where user_id = $1 and id = $2', userId, compId)
-    .then(function (data) {
-      res.status(200)
-        .json({
-          status: 'success',
-          data: data,
-          message: 'Retrieved ONE comp'
-        });
-    })
-    .catch(function (err) {
-      return next(err);
-    });
+function getUserCompetitions(user, res, next) {
+  const userId = parseInt(user.id);
+  return db.task(t => {
+    return t.map('SELECT * FROM competitions WHERE user_id = $1', userId, comp => {
+      return t.any('SELECT * FROM playlists WHERE competition_id = $1', comp.id).then(playlists => {
+        comp.playlists = playlists;
+        return comp;
+      });
+    }).then(t.batch)
+  }).then((competitions) => {
+    const compsNeedingWinnerUpdate = checkForNewWinner(competitions);
+    if(!compsNeedingWinnerUpdate.length) {
+      return competitions;
+    } else {
+      return updateWinners.update(compsNeedingWinnerUpdate).then(() => {
+        return competitions;
+      })
+    }
+  })
 }
 
 function createCompetition(req, res, next) {
@@ -48,7 +47,6 @@ function addUserToCompetition(userId, compId) {
       'values(${userId}, ${compId})',
     data);
 }
-
 
 function createUserCompetition(req, res, next) {
   let compId;
@@ -70,39 +68,6 @@ function createUserCompetition(req, res, next) {
       return next(err);
     });
 }
-
-function updateUserCompetition(req, res, next) {
-  db.none('update competitions set name=$1 where id=$3',
-    [req.body.name, parseInt(req.params.id)])
-    .then(function () {
-      res.status(200)
-        .json({
-          status: 'success',
-          message: 'Updated competitions'
-        });
-    })
-    .catch(function (err) {
-      return next(err);
-    });
-}
-
-function removeUserCompetition(req, res, next) {
-  var compID = parseInt(req.params.id);
-  db.result('delete from competitions where id = $1', compID)
-    .then(function (result) {
-      /* jshint ignore:start */
-      res.status(200)
-        .json({
-          status: 'success',
-          message: `Removed ${result.rowCount} competition`
-        });
-      /* jshint ignore:end */
-    })
-    .catch(function (err) {
-      return next(err);
-    });
-}
-
 
 module.exports = {
   createUserCompetition,

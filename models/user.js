@@ -42,7 +42,7 @@ function addUserIdToSpotifyData(req, res, next) {
 }
 
 function getSingleUser(req, res, next) {
-  const id = parseInt(req.params.userId);
+  const id = req.params.userId;
   let user;
   if (!id) {
     return Promise.resolve(null);

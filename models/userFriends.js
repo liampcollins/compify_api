@@ -1,3 +1,5 @@
+const db = require('./database').db;
+const requestStates = require('../utils/ENUMS').requestStates;
 
 function getUserFriends(req, res, next) {
   const userId = req.params.userId;

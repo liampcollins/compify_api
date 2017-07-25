@@ -4,6 +4,10 @@ const requestStates = {
   'rejected': 2
 }
 
+const notificationTypes = {
+  'competition_winner': 0
+}
 module.exports = {
-  requestStates
+  requestStates,
+  notificationTypes
 };
