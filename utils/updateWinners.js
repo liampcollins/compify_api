@@ -77,12 +77,15 @@ const update = (comps) => {
   let winnersMap;
   let playlistUserMap;
   return getWinningPlaylist(compIds).then((map) => {
+    if (Object.keys(map).length === 0) return;
     winnersMap = map;
     return getPlaylistOwners(winnersMap);
   }).then((resp) => {
+    if (!resp) return;
     playlistUserMap = resp;
     return updateWinners(playlistUserMap, winnersMap);
   }).then(() => {
+    if (!winnersMap || !compIds) return;
     return addNotifications(winnersMap, compIds);
   });
 }

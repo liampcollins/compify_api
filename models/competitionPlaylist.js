@@ -2,7 +2,7 @@
 const db = require('./database').db;
 
 function addPlaylistToCompetition(req, res, next) {
-  return db.one('insert into playlists(user_id, spotify_id, competition_id)' +
+  return db.none('insert into playlists(user_id, spotify_id, competition_id)' +
       'values(${user_id}, ${spotify_id}, ${competition_id})', req.body)
     .then(function () {
       res.status(200)
