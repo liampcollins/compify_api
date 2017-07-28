@@ -40,10 +40,9 @@ function addFriendRequest(req, res, user, next) {
     friend_id: req.params.userId,
     request_state: 0
   }
-
   return db.none('insert into user_friends(user_id, friend_id, request_state)' +
       'values(${user_id}, ${friend_id}, ${request_state})',
-    data).then(() => {
+    data).then((resp) => {
     res.status(200)
       .json({
         status: 'success',
@@ -57,12 +56,46 @@ function addFriendRequest(req, res, user, next) {
   });
 }
 
+function checkIfRequestAlreadySent(friends, userId) {
+  var message;
+  for (var i = 0; i < friends.length; i++) {
+    if (friends[i].user_id === userId || friends[i].friend_id === userId) {
+      switch (friends[i].request_state) {
+        case 0:
+          message = 'Friend request already sent and is pending approval';
+          break;
+        case 1:
+          message = 'User matching your submission is already a friend';
+          break;
+        case 2:
+          message = 'Friend request already sent and was rejected';
+          break;
+        default:
+          message = 'Friend request already sent';
+      }
+    }
+  }
+  return message;
+}
+
 function addFriend(req, res, next) {
   if (!req.body.info || !req.params.userId) {
     return Promise.resolve(null);
   }
+  var user;
   return db.one('select * from users where username = $1 OR email = $1', req.body.info).then(function (data) {
-    return addFriendRequest(req, res, data, next);
+    user = data;
+    return db.any('select * from user_friends where user_id = $1 OR friend_id = $1', user.id).then(function (resp) {
+      var message = checkIfRequestAlreadySent(resp, parseInt(req.params.userId));
+      if (message) {
+        res.status(200).json({
+          status: 'success',
+          message
+        });
+      } else {
+        return addFriendRequest(req, res, data, next);
+      }
+    });
   })
   .catch(function (err) {
     if (err.message === "No data returned from the query.") {
