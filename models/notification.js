@@ -24,6 +24,11 @@ function addNotifications(type, ids, users, next) {
   });
 }
 
+function getUserNotifications(userId) {
+    return db.any('select * from notifications where user_id = $1', userId);
+}
+
 module.exports = {
-  addNotifications
+  addNotifications,
+  getUserNotifications
 }

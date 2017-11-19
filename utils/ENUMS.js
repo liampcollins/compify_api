@@ -5,7 +5,8 @@ const requestStates = {
 }
 
 const notificationTypes = {
-  'competition_winner': 0
+  'competition_winner': 0,
+  'friend_requested_added': 1
 }
 module.exports = {
   requestStates,

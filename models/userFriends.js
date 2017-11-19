@@ -1,31 +1,43 @@
 const db = require('./database').db;
 const requestStates = require('../utils/ENUMS').requestStates;
+const notificationTypes = require('../utils/ENUMS').notificationTypes;
+
 const R = require('ramda');
 
-function getUserFriends(req, res, next) {
-  const userId = req.params.userId;
+function getUserFriends(userId) {
+  console.log('getUserFriends')
   if (!userId) {
     return Promise.resolve([]);
   }
 
-  return db.any('select * from user_friends where (user_id = $1 or friend_id = $1) and (request_state <> $2)', [userId, requestStates.requested])
+  return db.any('select * from user_friends where (user_id = $1 or friend_id = $1) and (request_state <> $2)', [userId, requestStates.rejected])
     .then(function (resp) {
       if (!resp.length){
-        return res.status(200)
-          .json({
-            status: 'success',
-            data: resp,
-            message: 'User has no friends'
-          });
+        return []
       }
-      const friends = R.map(a => a.friend_id === parseInt(userId) ? a.user_id : a.friend_id,  resp);
-      return db.any('select * from users where id in ($1)', friends).then((users) => {
-        res.status(200)
-          .json({
-            status: 'success',
-            data: users,
-            message: 'Retrieved user friends'
-          });
+      const friendIds = [];
+      const friendRequestStates = {};
+      for (let i = 0; i < resp.length; i++) {
+        let id;
+        if (resp[i].friend_id === parseInt(userId)) {
+          id = resp[i].user_id;
+          friendIds.push(id);
+        } else {
+          id = resp[i].friend_id;
+          friendIds.push(id);
+        }
+        friendRequestStates[id] = resp[i].request_state;
+      }
+      return db.any('select * from users where id in ($1)', friendIds).then((response) => {
+        const friendsAndRequests = R.map(a => {
+          a.request_state = friendRequestStates[a.id];
+          return a;
+        },  response);
+        const friendsResponse = {
+          friends: R.filter(f => f.request_state === requestStates.accepted, friendsAndRequests),
+          friendRequests: R.filter(f => f.request_state === requestStates.requested, friendsAndRequests)
+        };
+        return friendsResponse;
       });
     })
     .catch(function (err) {
@@ -42,7 +54,14 @@ function addFriendRequest(req, res, user, next) {
   }
   return db.none('insert into user_friends(user_id, friend_id, request_state)' +
       'values(${user_id}, ${friend_id}, ${request_state})',
-    data).then((resp) => {
+    data).then(() => {
+      const notificationData = {
+        userId: user.id,
+        type: notificationTypes.friend_requested_added,
+        ids: JSON.stringify({friend_id: req.params.userId})
+      }
+      return db.one('insert into notifications(userId, type, ids) values (${userId}, ${type}, ${ids})', notificationData)
+    }).then(() => {
     res.status(200)
       .json({
         status: 'success',
@@ -110,18 +129,17 @@ function addFriend(req, res, next) {
   });
 }
 
-
-function getFriendRequests(user) {
-  if (!user.id) return Promise.resolve();
-  return db.any('select * from user_friends where (user_id = $1) and request_state = $2', [user.id, requestStates.requested])
-  .then((resp) => {
-    if (!resp.length) {
-      return Promise.resolve([]);
-    }
-    const friends = R.map(a => a.user_id,  resp);
-    return db.any('select * from users where id in ($1)', friends);
-  });
-}
+// function getFriendRequests(user) {
+//   if (!user.id) return Promise.resolve();
+//   return db.any('select * from user_friends where (user_id = $1) and request_state = $2', [user.id, requestStates.requested])
+//   .then((resp) => {
+//     if (!resp.length) {
+//       return Promise.resolve([]);
+//     }
+//     const friends = R.map(a => a.user_id,  resp);
+//     return db.any('select * from users where id in ($1)', friends);
+//   });
+// }
 
 function updateFriendRequest(req, res, next, newState) {
   if (!req.params.userId || ! req.params.friendId) {
@@ -153,7 +171,7 @@ function rejectRequest(req, res, next) {
 module.exports = {
   getUserFriends,
   addFriend,
-  getFriendRequests,
+  // getFriendRequests,
   acceptRequest,
   rejectRequest
 };

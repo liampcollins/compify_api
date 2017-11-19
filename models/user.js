@@ -5,6 +5,7 @@ const db = require('./database').db;
 const requestStates = require('../utils/ENUMS').requestStates;
 const userFriends = require('./userFriends');
 const userCompetition = require('./userCompetition');
+const notification = require('./notification');
 
 function removeUser(req, res, next) {
   var userID = parseInt(req.params.userId);
@@ -41,27 +42,44 @@ function addUserIdToSpotifyData(req, res, next) {
     });
 }
 
+function getUserInfo(userId) {
+  let user;
+  return db.one('select * from users where id = $1', userId)
+    .then(function (data) {
+      user = data;
+      return userCompetition.getUserCompetitions(user, null, null)
+    })
+    .then((competitions) => {
+      user.competitions = competitions;
+      return userFriends.getUserFriends(userId)
+    }).then((friends) => {
+      user = R.merge(user, friends);
+      return notification.getUserNotifications(userId)
+    }).then((notifications) => {
+        user.notifications = notifications;
+        return user;
+    }).catch((error) => {
+      console.log('Error getting user info: ', error);
+      return Promise.reject(err);
+    })
+}
+
 function getSingleUser(req, res, next) {
   const id = req.params.userId;
-  let user;
   if (!id) {
     return Promise.resolve(null);
   }
-  return db.one('select * from users where id = $1', id)
-    .then(function (data) {
-      user = data;
-      return userCompetition.getUserCompetitions(user, res, next).then((competitions) => {
-        user.competitions = competitions;
+  return getUserInfo(id)
+    .then((user) => {
         res.status(200)
           .json({
             status: 'success',
             data: user,
             message: 'Retrieved user'
           });
-      });
     })
     .catch(function (err) {
-      if (err.message == 'No data returned from the query.') {
+      if (err && err.message == 'No data returned from the query.') {
         return null;
       }
       return next(err);
@@ -95,18 +113,15 @@ function upsertUser(req, res, next) {
       return createUser(req, res, next);
     } else {
       return updateUserTokens(user, next).then(() => {
-        return userCompetition.getUserCompetitions(user, res, next)
-      }).then((competitions) => {
-        user.competitions = competitions;
-        return userFriends.getFriendRequests(user)
-      }).then((notifications) => {
-        user.notifications = notifications;
-        res.status(200)
-          .json({
-            status: 'success',
-            data: user,
-            message: 'Retrieved ALL users competitions'
-          });
+        return getUserInfo(user.id)
+        .then((user) => {
+          res.status(200)
+            .json({
+              status: 'success',
+              data: user,
+              message: 'Retrieved ALL users competitions'
+            });
+        })
       });
     }
   })
@@ -144,7 +159,6 @@ function getTokens(req, res, next) {
       return next(err);
     });
 }
-
 
 function authenticateRequest(req, res, next) {
   const userId = parseInt(req.params[0]);
